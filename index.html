@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="MINAMATA QUIZ — An Interactive Scientific Quiz on Minamata Disease and methylmercury pollution.">
+<meta name="theme-color" content="#071B2B">
+<title>MINAMATA QUIZ — An Interactive Scientific Quiz</title>
+<style>
+/* ==========================================================
+   MINAMATA QUIZ — design system
+   Palette: deep ocean navy, turquoise, cyan, ocean slate, icy white
+   Spacing scale: multiples of 4 / 8 px
+   ========================================================== */
+:root{
+  /* palette */
+  --navy:#071B2B;        /* Deep Ocean Navy — page background */
+  --slate:#102C3D;       /* Ocean Slate — cards */
+  --turquoise:#57D4D5;   /* Elegant Turquoise — primary actions */
+  --cyan:#65D8DE;        /* Refined Cyan — small accents and icons */
+  --ice:#F2FAFF;         /* Icy White — main text */
+  --muted:#A8C3D1;       /* Soft Blue-Gray — secondary text */
+  --border:#244353;      /* Subtle Border */
+  --inset:#0B2333;       /* tone between navy and slate for inset surfaces */
+  --ok:#4ADE9A;  --ok-soft:rgba(74,222,154,.12);
+  --bad:#FF8A93; --bad-soft:rgba(255,138,147,.17);
+
+  /* spacing */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+  /* radii, sizes, shadow */
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --btn-h:52px;
+  --shadow:0 1px 0 rgba(242,250,255,.03) inset, 0 16px 32px -20px rgba(0,0,0,.65);
+  /* type scale */
+  --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --serif:Georgia,"Times New Roman",serif;
+  --fs-caption:.875rem; --fs-body:1.0625rem; --fs-option:1.125rem; --fs-lead:1.25rem;
+  --fs-h2:clamp(1.5rem,3.5vw,2rem);
+  --fs-question:clamp(1.375rem,3.2vw,2rem);
+  --fs-title:clamp(2.5rem,8vw,4.5rem);
+  /* motion */
+  --ease:cubic-bezier(.2,.7,.2,1); --t-fast:.15s; --t-med:.25s;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; min-height:100vh; display:flex; flex-direction:column;
+  font-family:var(--font); font-size:var(--fs-body); line-height:1.6; color:var(--ice);
+  background:
+    radial-gradient(900px 480px at 50% -8%,rgba(87,212,213,.10),transparent 70%),
+    var(--navy);
+  overflow-x:hidden;
+}
+h1,h2,h3,p{margin:0}
+button{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--cyan); outline-offset:3px; border-radius:var(--r-sm)}
+[hidden]{display:none !important}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* --- faint wave motif (static, decorative) --- */
+.bg-waves{position:fixed; left:0; right:0; bottom:0; height:200px; pointer-events:none; z-index:0; opacity:.5}
+.bg-waves svg{width:100%; height:100%; display:block}
+
+/* --- page frame --- */
+.topbar{
+  position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between;
+  gap:var(--s3); padding:var(--s4) clamp(16px,4vw,40px);
+}
+.brand{display:flex; align-items:center; gap:var(--s3); font-weight:700; letter-spacing:.16em; font-size:var(--fs-caption); color:var(--ice)}
+.brand svg{width:28px; height:28px; flex:none}
+main{position:relative; z-index:1; flex:1; width:100%; max-width:880px; margin:0 auto; padding:var(--s2) clamp(16px,4vw,32px) var(--s7)}
+footer{
+  position:relative; z-index:2; text-align:center; padding:var(--s5) var(--s4);
+  border-top:1px solid var(--border); font-size:var(--fs-caption); color:var(--muted);
+  background:rgba(7,27,43,.85);
+}
+footer strong{display:block; color:var(--ice); font-weight:600; font-size:1rem}
+
+/* --- buttons --- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:var(--s2);
+  min-height:var(--btn-h); padding:0 var(--s6); border-radius:var(--r-md);
+  border:1px solid transparent; cursor:pointer; font-weight:600; font-size:1.0625rem; letter-spacing:.01em;
+  transition:transform var(--t-fast) var(--ease), background var(--t-fast), border-color var(--t-fast), box-shadow var(--t-med), opacity var(--t-fast);
+}
+.btn-primary{background:var(--turquoise); color:var(--navy)}
+.btn-primary:hover:not(:disabled){background:var(--cyan); transform:translateY(-1px); box-shadow:0 10px 24px -12px rgba(87,212,213,.7)}
+.btn-primary:active:not(:disabled){transform:translateY(0)}
+.btn-secondary{background:transparent; border-color:var(--border); color:var(--ice)}
+.btn-secondary:hover:not(:disabled){border-color:var(--cyan); background:rgba(101,216,222,.08)}
+.btn:disabled{background:var(--slate); border-color:var(--border); color:var(--muted); cursor:not-allowed; box-shadow:none}
+.btn-lg{min-height:60px; padding:0 var(--s7); font-size:1.1875rem}
+.btn-sm{min-height:40px; padding:0 var(--s4); font-size:var(--fs-caption); font-weight:500}
+
+/* --- screens --- */
+.screen{animation:enter var(--t-med) var(--ease) both}
+@keyframes enter{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
+.card{
+  background:var(--slate); border:1px solid var(--border); border-radius:var(--r-lg);
+  padding:clamp(20px,4vw,40px); box-shadow:var(--shadow);
+}
+
+/* --- welcome --- */
+.hero{text-align:center; padding:var(--s6) 0 var(--s5)}
+.hero .mark{width:88px; height:88px; margin:0 auto var(--s5); display:block}
+.eyebrow{color:var(--cyan); letter-spacing:.24em; font-size:var(--fs-caption); text-transform:uppercase; font-weight:600}
+.hero h1{font-family:var(--serif); font-size:var(--fs-title); line-height:1.05; letter-spacing:.02em; margin:var(--s3) 0 var(--s2); color:var(--ice); outline:none}
+.subtitle{font-family:var(--serif); font-style:italic; font-size:var(--fs-lead); color:var(--cyan)}
+.lead{max-width:620px; margin:var(--s5) auto 0; color:var(--muted); font-size:var(--fs-lead); line-height:1.55}
+.modes{border:0; padding:0; margin:var(--s6) 0 0; display:grid; grid-template-columns:1fr 1fr; gap:var(--s4)}
+.modes legend{padding:0}
+.mode{position:relative; display:block; cursor:pointer}
+.mode input{position:absolute; opacity:0; inset:0; width:100%; height:100%; margin:0; cursor:pointer}
+.mode-body{
+  display:grid; grid-template-columns:auto 1fr; column-gap:var(--s4); row-gap:var(--s1); align-items:start;
+  height:100%; padding:var(--s5); border-radius:var(--r-lg); background:var(--slate); border:1.5px solid var(--border);
+  transition:border-color var(--t-fast), background var(--t-fast), transform var(--t-fast) var(--ease);
+}
+.mode:hover .mode-body{border-color:var(--cyan); transform:translateY(-2px)}
+.mode input:checked + .mode-body{border-color:var(--turquoise); background:linear-gradient(180deg,rgba(87,212,213,.10),rgba(87,212,213,.03)), var(--slate)}
+.mode input:focus-visible + .mode-body{outline:3px solid var(--cyan); outline-offset:3px}
+.mode-icon{grid-row:1 / span 3; width:40px; height:40px; color:var(--cyan)}
+.mode-title{padding-right:var(--s5); font-weight:700; font-size:1.1875rem; color:var(--ice)}
+.mode-desc{color:var(--muted); font-size:.9375rem}
+.mode-count{color:var(--cyan); font-size:var(--fs-caption); font-weight:600; letter-spacing:.04em}
+.mode-check{position:absolute; top:var(--s3); right:var(--s3); width:22px; height:22px; color:var(--turquoise); opacity:0; transition:opacity var(--t-fast)}
+.mode input:checked + .mode-body .mode-check{opacity:1}
+.start{text-align:center; margin-top:var(--s6)}
+
+/* --- quiz --- */
+.quiz-top{display:flex; justify-content:space-between; align-items:center; gap:var(--s3); margin-bottom:var(--s4); flex-wrap:wrap}
+.mode-tag{color:var(--cyan); letter-spacing:.16em; font-size:var(--fs-caption); text-transform:uppercase; font-weight:600}
+.progress-head{display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3); margin-bottom:var(--s2)}
+.q-count{font-size:var(--fs-lead); font-weight:600; color:var(--ice)}
+.progress{height:8px; border-radius:999px; background:var(--inset); border:1px solid var(--border); overflow:hidden; margin-bottom:var(--s4)}
+.progress i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--turquoise),var(--cyan)); border-radius:999px; transition:width .4s var(--ease)}
+.stats{list-style:none; display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s3); margin:0 0 var(--s5); padding:0}
+.stat{background:var(--inset); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s2) var(--s3); display:flex; align-items:baseline; justify-content:space-between; gap:var(--s2)}
+.stat small{color:var(--muted); font-size:var(--fs-caption)}
+.stat b{font-size:1.25rem; font-weight:700; color:var(--ice); font-variant-numeric:tabular-nums}
+.stat.ok b{color:var(--ok)} .stat.bad b{color:var(--bad)}
+.q-body{animation:swap .28s var(--ease) both}
+@keyframes swap{from{opacity:0; transform:translateX(10px)}to{opacity:1; transform:none}}
+.topic{display:inline-block; font-size:var(--fs-caption); letter-spacing:.08em; text-transform:uppercase; font-weight:600; color:var(--cyan); margin-bottom:var(--s3)}
+#qText{font-size:var(--fs-question); line-height:1.35; font-weight:600; color:var(--ice); margin-bottom:var(--s5); outline:none; overflow-wrap:anywhere}
+.options{display:grid; gap:var(--s3)}
+.options.tf{grid-template-columns:1fr 1fr}
+.opt{
+  display:flex; align-items:center; gap:var(--s4); width:100%; min-height:64px; text-align:left; cursor:pointer;
+  padding:var(--s3) var(--s4); border-radius:var(--r-md); background:var(--inset); border:1.5px solid var(--border);
+  font-size:var(--fs-option); line-height:1.4;
+  transition:border-color var(--t-fast), background var(--t-fast), transform var(--t-fast) var(--ease);
+}
+.opt:hover:not(:disabled){border-color:var(--cyan); background:rgba(101,216,222,.06)}
+.opt .key{
+  flex:none; width:32px; height:32px; border-radius:var(--r-sm); display:grid; place-items:center;
+  font-weight:700; font-size:var(--fs-caption); color:var(--cyan); border:1px solid var(--border); background:var(--navy);
+}
+.opt .txt{flex:1; min-width:0; overflow-wrap:anywhere}
+.opt .state{flex:none; width:24px; height:24px; color:var(--border); display:grid; place-items:center}
+.opt .state svg{width:24px; height:24px; display:block}
+.tf .opt{justify-content:center; font-weight:600; min-height:72px}
+.tf .opt .txt{flex:none}
+.opt.selected{border-color:var(--turquoise); background:rgba(87,212,213,.10)}
+.opt.selected .key{background:var(--turquoise); border-color:var(--turquoise); color:var(--navy)}
+.opt.selected .state{color:var(--turquoise)}
+.opt.selected .state svg{animation:pop .2s var(--ease)}
+@keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}
+.opt:disabled{cursor:default}
+.opt.correct{border-color:var(--ok); background:var(--ok-soft)}
+.opt.correct .state{color:var(--ok)}
+.opt.correct .key{background:var(--ok); border-color:var(--ok); color:var(--navy)}
+.opt.wrong{border-color:var(--bad); background:var(--bad-soft)}
+.opt.wrong .state{color:var(--bad)}
+.opt.wrong .key{background:var(--bad); border-color:var(--bad); color:var(--navy)}
+.opt.dim{color:var(--muted)}
+
+.explain{margin-top:var(--s5); padding:var(--s5); border-radius:var(--r-md); background:var(--inset); border:1px solid var(--border); border-left:4px solid var(--cyan); animation:enter .25s var(--ease) both}
+.explain.ok{border-left-color:var(--ok)} .explain.bad{border-left-color:var(--bad)}
+.ex-head{display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s3)}
+.ex-icon{flex:none; width:28px; height:28px; display:grid; place-items:center}
+.ex-icon svg{width:28px; height:28px; display:block}
+.verdict{font-weight:700; font-size:1.1875rem; overflow-wrap:anywhere}
+.explain.ok .ex-icon, .explain.ok .verdict{color:var(--ok)}
+.explain.bad .ex-icon, .explain.bad .verdict{color:var(--bad)}
+.ex-label{font-size:var(--fs-caption); letter-spacing:.08em; text-transform:uppercase; font-weight:600; color:var(--muted); margin-bottom:var(--s1)}
+.ex-text{font-size:var(--fs-option); line-height:1.6; color:var(--ice)}
+.src{margin-top:var(--s3); font-size:var(--fs-caption); color:var(--muted)}
+.actions{display:flex; justify-content:space-between; align-items:center; gap:var(--s4); margin-top:var(--s5); flex-wrap:wrap}
+.hint{color:var(--muted); font-size:var(--fs-caption)}
+
+/* --- results --- */
+.res-head{text-align:center}
+.res-head h2{font-family:var(--serif); font-size:var(--fs-h2); color:var(--ice); outline:none}
+.res-mode{color:var(--cyan); font-size:var(--fs-caption); letter-spacing:.16em; text-transform:uppercase; font-weight:600; margin-top:var(--s1)}
+.score-wrap{display:flex; align-items:center; justify-content:center; gap:var(--s6); flex-wrap:wrap; margin:var(--s5) 0 var(--s4)}
+.ring{width:176px; height:176px; position:relative}
+.ring svg{width:100%; height:100%; transform:rotate(-90deg); display:block}
+.ring .bg{stroke:var(--inset)}
+.ring .fg{stroke:url(#ringGrad); transition:stroke-dashoffset .9s var(--ease)}
+.ring .pct{position:absolute; inset:0; display:grid; place-items:center; font-family:var(--serif); font-size:2.5rem; color:var(--ice); font-variant-numeric:tabular-nums}
+.tally{list-style:none; margin:0; padding:0; display:grid; gap:var(--s2); min-width:240px}
+.tally li{display:flex; justify-content:space-between; align-items:center; gap:var(--s5); padding:var(--s3) var(--s4); border-radius:var(--r-md); background:var(--inset); border:1px solid var(--border)}
+.tally span{color:var(--muted)}
+.tally b{font-size:1.125rem; font-variant-numeric:tabular-nums}
+.tally .ok b{color:var(--ok)} .tally .bad b{color:var(--bad)}
+.message{text-align:center; max-width:620px; margin:var(--s4) auto var(--s5); font-size:var(--fs-lead); color:var(--ice)}
+.review h3{font-size:1.25rem; color:var(--ice); margin:var(--s5) 0 var(--s3)}
+.rev-item{border:1px solid var(--border); border-left:4px solid var(--bad); border-radius:var(--r-md); background:var(--inset); margin-bottom:var(--s3)}
+.rev-item summary{cursor:pointer; padding:var(--s4); font-weight:600; list-style:none; display:flex; gap:var(--s3); align-items:flex-start; border-radius:var(--r-md)}
+.rev-item summary::-webkit-details-marker{display:none}
+.rev-item summary::before{content:"+"; flex:none; width:20px; color:var(--cyan); font-weight:700}
+.rev-item[open] summary::before{content:"\2212"}
+.rev-item summary span{min-width:0; overflow-wrap:anywhere}
+.rev-body{padding:0 var(--s4) var(--s4) calc(var(--s4) + 32px)}
+.rev-body p{margin:var(--s2) 0; overflow-wrap:anywhere}
+.rev-body .yours{color:var(--bad)} .rev-body .right{color:var(--ok)}
+.perfect{padding:var(--s4); text-align:center; border:1px solid var(--ok); border-radius:var(--r-md); color:var(--ok); background:var(--ok-soft)}
+.btn-row{display:flex; gap:var(--s4); justify-content:center; flex-wrap:wrap; margin-top:var(--s5)}
+
+/* --- responsive --- */
+@media (max-width:720px){
+  .modes{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .options.tf{grid-template-columns:1fr}
+  .btn-lg{width:100%; padding:0 var(--s5)}
+  .actions .btn{width:100%}
+  .actions .hint{order:2; width:100%; text-align:center}
+}
+@media (max-width:420px){
+  .hero{padding-top:var(--s4)}
+  .mode-body{padding:var(--s4)}
+  .ring{width:152px; height:152px}
+}
+@media (min-width:1400px){ html{font-size:112.5%} main{max-width:980px} }
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important; transition:none !important; scroll-behavior:auto !important}
+}
+</style>
+</head>
+<body>
+
+<!-- Decorative wave motif -->
+<div class="bg-waves" aria-hidden="true">
+  <svg viewBox="0 0 1440 200" preserveAspectRatio="none">
+    <path d="M0 110 C180 70 360 150 540 110 S900 70 1080 110 S1320 140 1440 100 V200 H0Z" fill="#102C3D" opacity=".55"/>
+    <path d="M0 150 C200 120 380 180 600 150 S980 120 1180 150 S1380 170 1440 145 V200 H0Z" fill="#0B2333" opacity=".9"/>
+  </svg>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke-linecap="round"><circle cx="16" cy="16" r="14" stroke="#65D8DE" stroke-width="1.5"/><path d="M6 15.5q2.5-3 5 0t5 0 5 0 5 0" stroke="#57D4D5" stroke-width="2"/><path d="M9 21q2-2.4 4 0t4 0 4 0" stroke="#65D8DE" stroke-width="1.5" opacity=".7"/></svg>
+    <span>MINAMATA QUIZ</span>
+  </div>
+  <button class="btn btn-secondary btn-sm" id="fsBtn" type="button">Full screen</button>
+</header>
+
+<main id="main">
+
+  <!-- ===== WELCOME ===== -->
+  <section id="home" class="screen" aria-labelledby="homeTitle">
+    <div class="hero">
+      <svg class="mark" viewBox="0 0 96 96" fill="none" role="img" aria-label="Concentric ripples on water">
+        <circle cx="48" cy="48" r="44" stroke="#244353" stroke-width="1.5"/>
+        <circle cx="48" cy="48" r="32" stroke="#57D4D5" stroke-opacity=".55" stroke-width="1.5"/>
+        <circle cx="48" cy="48" r="20" stroke="#65D8DE" stroke-opacity=".8" stroke-width="1.5"/>
+        <circle cx="48" cy="48" r="8" fill="#57D4D5"/>
+      </svg>
+      <p class="eyebrow">Master 1 Biochemistry</p>
+      <h1 id="homeTitle" tabindex="-1" data-focus>MINAMATA QUIZ</h1>
+      <p class="subtitle">An Interactive Scientific Quiz</p>
+      <p class="lead">Explore the history, health effects and molecular neurotoxicity of Minamata Disease and methylmercury pollution, with an instant scientific explanation after every answer.</p>
+    </div>
+
+    <fieldset class="modes">
+      <legend class="sr">Choose a quiz mode</legend>
+      <label class="mode">
+        <input type="radio" name="mode" value="mcq" checked>
+        <span class="mode-body">
+          <svg class="mode-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="7" width="7" height="7" rx="2"/><rect x="5" y="17" width="7" height="7" rx="2"/><rect x="5" y="27" width="7" height="7" rx="2"/><path d="M17 10.5h18M17 20.5h18M17 30.5h18"/><path d="M6.5 20.5l1.5 1.5 2.5-3"/></svg>
+          <span class="mode-title">Multiple Choice Quiz (QCM)</span>
+          <span class="mode-desc">Four options, one correct answer.</span>
+          <span class="mode-count" id="cntMcq"></span>
+          <svg class="mode-check" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 8.8" stroke="#071B2B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </label>
+      <label class="mode">
+        <input type="radio" name="mode" value="tf">
+        <span class="mode-body">
+          <svg class="mode-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 14l5 5 9-10"/><path d="M22 24l11 11M33 24L22 35"/></svg>
+          <span class="mode-title">True or False</span>
+          <span class="mode-desc">Judge each scientific statement.</span>
+          <span class="mode-count" id="cntTf"></span>
+          <svg class="mode-check" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 8.8" stroke="#071B2B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </label>
+    </fieldset>
+
+    <div class="start"><button class="btn btn-primary btn-lg" id="startBtn" type="button">Start Quiz</button></div>
+  </section>
+
+  <!-- ===== QUIZ ===== -->
+  <section id="quiz" class="screen" hidden aria-label="Quiz">
+    <div class="quiz-top">
+      <span class="mode-tag" id="modeTag"></span>
+      <button class="btn btn-secondary btn-sm" id="exitBtn" type="button">Exit quiz</button>
+    </div>
+    <div class="progress-head"><span class="q-count" id="qCount">Question 1 of 1</span></div>
+    <div class="progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pbar"><i id="pfill"></i></div>
+    <ul class="stats" aria-label="Running totals">
+      <li class="stat"><small>Score</small><b id="sScore">0</b></li>
+      <li class="stat ok"><small>Correct</small><b id="sOk">0</b></li>
+      <li class="stat bad"><small>Incorrect</small><b id="sBad">0</b></li>
+      <li class="stat"><small>Accuracy</small><b id="sPct">0%</b></li>
+    </ul>
+
+    <article class="card" id="qCard">
+      <div class="q-body" id="qBody">
+        <span class="topic" id="topic"></span>
+        <h2 id="qText" tabindex="-1"></h2>
+        <div class="options" id="options" role="radiogroup" aria-labelledby="qText"></div>
+      </div>
+      <div id="explain" class="explain" hidden role="status" aria-live="polite"></div>
+      <div class="actions">
+        <span class="hint" id="hint"></span>
+        <button class="btn btn-primary" id="actionBtn" type="button" disabled>Confirm answer</button>
+      </div>
+    </article>
+  </section>
+
+  <!-- ===== RESULTS ===== -->
+  <section id="results" class="screen" hidden aria-labelledby="resTitle">
+    <div class="card">
+      <div class="res-head">
+        <h2 id="resTitle" tabindex="-1" data-focus>Quiz complete</h2>
+        <p class="res-mode" id="rMode"></p>
+      </div>
+      <div class="score-wrap">
+        <div class="ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#57D4D5"/><stop offset="1" stop-color="#65D8DE"/></linearGradient></defs>
+            <circle class="bg" cx="60" cy="60" r="52" fill="none" stroke-width="10"/>
+            <circle class="fg" id="ringFg" cx="60" cy="60" r="52" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+          </svg>
+          <div class="pct" id="rPct">0%</div>
+        </div>
+        <ul class="tally">
+          <li><span>Final score</span><b id="rScore"></b></li>
+          <li class="ok"><span>Correct answers</span><b id="rOk"></b></li>
+          <li class="bad"><span>Incorrect answers</span><b id="rBad"></b></li>
+          <li><span>Total questions</span><b id="rTotal"></b></li>
+        </ul>
+      </div>
+      <p class="message" id="rMsg"></p>
+      <div class="review" id="review"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="restartBtn" type="button">Restart Quiz</button>
+        <button class="btn btn-secondary" id="changeBtn" type="button">Change mode</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <strong>Developed by Amara Fadoua.</strong>
+  <span>Master 1 Biochemistry — University of Blida 1</span>
+</footer>
+
+<script>
+'use strict';
+/* ==========================================================
+   1. QUESTION DATA
+   MCQ: `answer` = index of the correct option in `options`.
+        Options are shuffled at runtime together with their
+        correctness flag, so the answer key can never drift.
+   TF : `answer` = true / false.
+   Every item has: topic label, short scientific explanation.
+   ========================================================== */
+const QUESTIONS = {
+  mcq: [
+    { q:"In which year did the Chisso Corporation begin acetaldehyde production in Minamata?",
+      options:["1932","1956","1959","1968"], answer:0,
+      explanation:"Chisso began acetaldehyde production in Minamata in 1932. Wastewater from the industrial activity later carried mercury compounds into Minamata Bay.",
+      topic:"Chronology — Industrial origin" },
+    { q:"What did the industrial wastewater discharged into Minamata Bay during the 1930s–1950s contain?",
+      options:["Mercury compounds","Radioactive isotopes","Crude oil residues","Chlorinated pesticides"], answer:0,
+      explanation:"The wastewater contained mercury compounds. Released into the bay over several decades, they led to methylmercury accumulation in fish and shellfish.",
+      topic:"Chronology — Pollution of Minamata Bay" },
+    { q:"How was methylmercury transferred to humans in Minamata?",
+      options:["Eating contaminated fish and shellfish","Inhaling airborne industrial dust","Skin contact with seawater while swimming","Drinking untreated river water"], answer:0,
+      explanation:"Methylmercury accumulated in fish and shellfish, and humans were exposed through the consumption of these contaminated seafoods.",
+      topic:"Exposure — Food chain transfer" },
+    { q:"In which year was Minamata disease officially recognized?",
+      options:["1932","1956","1959","1968"], answer:1,
+      explanation:"Minamata disease was officially recognized in 1956. Research findings followed in 1959, and scientific evidence accumulated during the 1960s.",
+      topic:"Chronology — Official recognition" },
+    { q:"What followed the Japanese government's official conclusion in 1968?",
+      options:["Environmental regulations and victim compensation","The start of acetaldehyde production","The first official recognition of the disease","The first research findings on the disease"], answer:0,
+      explanation:"After 1968, environmental regulations were introduced and compensation was provided to victims. Production start (1932), recognition (1956) and research findings (1959) all came earlier.",
+      topic:"Chronology — Government response" },
+    { q:"Which symptom is a sensory disturbance associated with Minamata disease?",
+      options:["Numbness and tingling","Tremor","Loss of balance","Cognitive impairment"], answer:0,
+      explanation:"Numbness and tingling are sensory disturbances. Loss of balance (ataxia), tremor and impaired coordination affect motor control, while cognitive impairment is a separate neurological effect.",
+      topic:"Neurological effects — Sensory symptoms" },
+    { q:"Which neurological sign is characterized by loss of balance and poorly coordinated movements?",
+      options:["Ataxia","Tremor","Numbness","Cognitive impairment"], answer:0,
+      explanation:"Ataxia refers to loss of balance and impaired coordination. It is one of the neurological effects of methylmercury poisoning, alongside sensory disturbances and tremor.",
+      topic:"Neurological effects — Motor symptoms" },
+    { q:"Which amino acid does methylmercury bind to, forming a complex that can reach the brain?",
+      options:["Cysteine","Glycine","Alanine","Proline"], answer:0,
+      explanation:"Methylmercury binds cysteine to form the MeHg–Cys complex, which can then be carried across the blood–brain barrier.",
+      topic:"Mechanisms — MeHg–Cys complex" },
+    { q:"Which transporter allows the MeHg–Cys complex to cross the blood–brain barrier?",
+      options:["LAT1, an amino acid transporter","GLUT1, a glucose transporter","Na⁺/K⁺-ATPase","Aquaporin-4"], answer:0,
+      explanation:"The MeHg–Cys complex can cross the blood–brain barrier via amino acid transporters such as LAT1, allowing methylmercury to accumulate in nervous tissue.",
+      topic:"Mechanisms — Blood–brain barrier" },
+    { q:"With which functional groups of proteins does methylmercury interact?",
+      options:["Thiol (–SH) groups","Carboxyl (–COOH) groups","Phosphate groups","Methyl (–CH₃) groups"], answer:0,
+      explanation:"Methylmercury interacts with protein thiol (–SH) groups, and also with glutathione (GSH), which contains a thiol group.",
+      topic:"Mechanisms — Thiol interaction" },
+    { q:"What is a consequence of glutathione (GSH) depletion in neural cells?",
+      options:["Weakened antioxidant defenses","Increased ATP production","Reduced ROS levels","Stronger blood–brain barrier"], answer:0,
+      explanation:"GSH is a key antioxidant. Its depletion weakens antioxidant defenses and favors oxidative stress.",
+      topic:"Mechanisms — Glutathione depletion" },
+    { q:"Which damage can result from the oxidative stress and increased ROS caused by methylmercury?",
+      options:["Lipid peroxidation, protein oxidation and DNA damage","Increased glutathione synthesis only","Enhanced ATP production","Decreased formation of ROS"], answer:0,
+      explanation:"Oxidative stress raises reactive oxygen species (ROS), which can cause lipid peroxidation, protein oxidation and DNA damage.",
+      topic:"Mechanisms — Oxidative stress" },
+    { q:"What are the consequences of mitochondrial dysfunction in methylmercury neurotoxicity?",
+      options:["Decreased ATP production and increased ROS","Increased ATP production and decreased ROS","Decreased ATP production and decreased ROS","No change in energy metabolism"], answer:0,
+      explanation:"Mitochondrial dysfunction decreases ATP production and increases ROS, further aggravating oxidative stress.",
+      topic:"Mechanisms — Mitochondrial dysfunction" },
+    { q:"Overactivation of which receptors by excess glutamate leads to excitotoxicity?",
+      options:["NMDA receptors","GABA-A receptors","Nicotinic acetylcholine receptors","Dopamine D2 receptors"], answer:0,
+      explanation:"Excess glutamate can overactivate NMDA receptors and cause excitotoxicity. This mechanism interacts with the others and can lead to neuronal injury or death.",
+      topic:"Mechanisms — Excitotoxicity" }
+  ],
+  tf: [
+    { q:"Wastewater containing mercury compounds was discharged into Minamata Bay during the 1930s–1950s.",
+      answer:true,
+      explanation:"True. Industrial wastewater with mercury compounds was released into the bay over these decades, leading to methylmercury accumulation in fish and shellfish.",
+      topic:"Chronology — Pollution of Minamata Bay" },
+    { q:"Research findings on Minamata disease appeared in 1959, before the disease was officially recognized in 1956.",
+      answer:false,
+      explanation:"False. Official recognition came first, in 1956; the research findings followed in 1959.",
+      topic:"Chronology — Recognition and research" },
+    { q:"The Japanese government's official conclusion in 1968 followed accumulating scientific evidence during the 1960s.",
+      answer:true,
+      explanation:"True. Evidence accumulated throughout the 1960s, and the government reached its official conclusion in 1968.",
+      topic:"Chronology — Scientific evidence" },
+    { q:"Environmental regulations and victim compensation were established before 1968.",
+      answer:false,
+      explanation:"False. Environmental regulations and victim compensation came after 1968.",
+      topic:"Chronology — Government response" },
+    { q:"Methylmercury poisoning can cause possible permanent neurological damage.",
+      answer:true,
+      explanation:"True. Neurological effects such as ataxia, tremor, impaired coordination and cognitive impairment can be accompanied by possible permanent damage.",
+      topic:"Neurological effects — Outcomes" },
+    { q:"The MeHg–Cys complex can cross the blood–brain barrier through amino acid transporters such as LAT1.",
+      answer:true,
+      explanation:"True. This transport route allows methylmercury to reach and accumulate in nervous tissue.",
+      topic:"Mechanisms — Blood–brain barrier" },
+    { q:"Glutathione (GSH) depletion strengthens the antioxidant defenses of neural cells.",
+      answer:false,
+      explanation:"False. GSH is an antioxidant; its depletion weakens antioxidant defenses.",
+      topic:"Mechanisms — Glutathione depletion" },
+    { q:"Mitochondrial dysfunction increases ATP production.",
+      answer:false,
+      explanation:"False. Mitochondrial dysfunction decreases ATP production and increases ROS.",
+      topic:"Mechanisms — Mitochondrial dysfunction" },
+    { q:"Disrupted calcium homeostasis can activate degradative enzymes.",
+      answer:true,
+      explanation:"True. Disrupted calcium homeostasis can activate degradative enzymes, contributing to neuronal injury.",
+      topic:"Mechanisms — Calcium homeostasis" },
+    { q:"Microglial activation and pro-inflammatory cytokines reduce neuroinflammation.",
+      answer:false,
+      explanation:"False. Microglial activation and pro-inflammatory cytokines contribute to neuroinflammation.",
+      topic:"Mechanisms — Neuroinflammation" }
+  ]
+};
+
+/* ==========================================================
+   2. DATA SELF-CHECK (results appear in the browser console)
+   ========================================================== */
+function validateData(){
+  const problems = [];
+  QUESTIONS.mcq.forEach((q,i)=>{
+    const id = "MCQ "+(i+1);
+    if(!q.q || !q.explanation || !q.topic) problems.push(id+": missing text/explanation/topic");
+    if(!Array.isArray(q.options) || q.options.length!==4) problems.push(id+": needs exactly 4 options");
+    else{
+      if(new Set(q.options).size!==4) problems.push(id+": duplicate options");
+      if(!Number.isInteger(q.answer) || q.answer<0 || q.answer>3) problems.push(id+": invalid answer index");
+    }
+  });
+  QUESTIONS.tf.forEach((q,i)=>{
+    const id = "TF "+(i+1);
+    if(!q.q || !q.explanation || !q.topic) problems.push(id+": missing text/explanation/topic");
+    if(typeof q.answer!=="boolean") problems.push(id+": answer must be boolean");
+  });
+  if(problems.length) console.error("Question data problems:", problems);
+  else console.log("Question data OK — MCQ:"+QUESTIONS.mcq.length+", T/F:"+QUESTIONS.tf.length);
+  return problems.length===0;
+}
+validateData();
+
+/* ==========================================================
+   3. HELPERS & STATE (kept only in memory)
+   ========================================================== */
+const $ = (sel, root=document) => root.querySelector(sel);
+const screens = { home:$('#home'), quiz:$('#quiz'), results:$('#results') };
+const MODE_LABEL = { mcq:"Multiple Choice Quiz (QCM)", tf:"True or False" };
+const modeInputs = document.querySelectorAll('input[name="mode"]');
+
+// Inline SVG icons (currentColor) — correctness is never shown by colour alone
+const ICON = {
+  ring:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>',
+  dot:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.5" fill="currentColor"/></svg>',
+  ok:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 8.8" stroke="#071B2B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  bad:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#071B2B" stroke-width="2.4" stroke-linecap="round"/></svg>'
+};
+
+const state = {
+  mode:null,      // 'mcq' | 'tf'
+  queue:[],       // prepared questions for this run
+  i:0,            // current index
+  correct:0,      // correct answers
+  wrong:[],       // incorrectly answered items (for review)
+  selected:null,  // selected option index (before confirmation)
+  answered:false  // guards against double scoring
+};
+
+// Fisher–Yates shuffle (returns a new array)
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// Turn raw data into runtime questions: options carry their own correctness flag
+function prepare(mode){
+  return shuffle(QUESTIONS[mode]).map(q=>{
+    if(mode==='mcq'){
+      const opts = shuffle(q.options.map((text,idx)=>({ text, correct: idx===q.answer })));
+      return { q:q.q, topic:q.topic, explanation:q.explanation, opts };
+    }
+    return { q:q.q, topic:q.topic, explanation:q.explanation,
+             opts:[ {text:"True", correct:q.answer===true}, {text:"False", correct:q.answer===false} ] };
+  });
+}
+
+function show(name){
+  for(const k in screens) screens[k].hidden = (k!==name);
+  window.scrollTo(0,0);
+  const f = screens[name].querySelector('[data-focus]');
+  if(f) f.focus({preventScroll:true});
+}
+
+function chosenMode(){
+  for(const r of modeInputs){ if(r.checked) return r.value; }
+  return 'mcq';
+}
+
+/* ==========================================================
+   4. QUIZ FLOW
+   ========================================================== */
+function startMode(mode){
+  state.mode = mode;
+  state.queue = prepare(mode);
+  state.i = 0; state.correct = 0; state.wrong = [];
+  state.selected = null; state.answered = false;
+  $('#modeTag').textContent = MODE_LABEL[mode];
+  $('#options').className = 'options' + (mode==='tf' ? ' tf' : '');
+  show('quiz');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = state.queue[state.i];
+  state.selected = null; state.answered = false;
+
+  // restart the short entrance transition of the question block
+  const body = $('#qBody');
+  body.classList.remove('q-body'); void body.offsetWidth; body.classList.add('q-body');
+
+  $('#topic').textContent = q.topic;
+  $('#qText').textContent = q.q;
+  $('#explain').hidden = true;
+  $('#explain').className = 'explain';
+
+  const keys = state.mode==='mcq' ? ['1','2','3','4'] : ['T','F'];
+  const box = $('#options');
+  box.innerHTML = '';
+  q.opts.forEach((o,idx)=>{
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'opt';
+    b.setAttribute('role','radio'); b.setAttribute('aria-checked','false');
+    b.dataset.idx = idx;
+    b.innerHTML = '<span class="key" aria-hidden="true"></span><span class="txt"></span><span class="state" aria-hidden="true"></span><span class="sr"></span>';
+    b.querySelector('.key').textContent = keys[idx];
+    b.querySelector('.txt').textContent = o.text;
+    b.querySelector('.state').innerHTML = ICON.ring;
+    b.addEventListener('click', ()=>selectOption(idx));
+    box.appendChild(b);
+  });
+
+  const act = $('#actionBtn');
+  act.textContent = 'Confirm answer';
+  act.disabled = true;
+  $('#hint').textContent = state.mode==='mcq'
+    ? 'Keys: 1–4 select · Enter confirms'
+    : 'Keys: T / F select · Enter confirms';
+
+  updateStats();
+  const t = $('#qText'); t.focus({preventScroll:true});
+}
+
+function selectOption(idx){
+  if(state.answered) return;           // locked after confirmation
+  state.selected = idx;
+  [...$('#options').children].forEach((b,k)=>{
+    const on = k===idx;
+    b.classList.toggle('selected', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+    $('.state', b).innerHTML = on ? ICON.dot : ICON.ring;
+  });
+  $('#actionBtn').disabled = false;
+}
+
+function confirmAnswer(){
+  if(state.answered || state.selected===null) return;   // prevents double scoring
+  state.answered = true;
+
+  const q = state.queue[state.i];
+  const chosen = q.opts[state.selected];
+  const right  = q.opts.find(o=>o.correct);
+  const isCorrect = chosen.correct;
+
+  if(isCorrect) state.correct++;
+  else state.wrong.push({ q:q.q, topic:q.topic, explanation:q.explanation, yours:chosen.text, right:right.text });
+
+  // Visual feedback: colour + icon + screen-reader text
+  [...$('#options').children].forEach((b,k)=>{
+    b.disabled = true;
+    b.classList.remove('selected');
+    const st = $('.state', b), sr = $('.sr', b);
+    if(q.opts[k].correct){
+      b.classList.add('correct'); st.innerHTML = ICON.ok;
+      sr.textContent = k===state.selected ? ' (your answer — correct)' : ' (correct answer)';
+    }else if(k===state.selected){
+      b.classList.add('wrong'); st.innerHTML = ICON.bad;
+      sr.textContent = ' (your answer — incorrect)';
+    }else{
+      b.classList.add('dim'); st.innerHTML = ICON.ring;
+    }
+  });
+
+  const ex = $('#explain');
+  ex.className = 'explain ' + (isCorrect ? 'ok' : 'bad');
+  ex.innerHTML = '';
+  const head = document.createElement('div'); head.className = 'ex-head';
+  const ic = document.createElement('span'); ic.className = 'ex-icon'; ic.setAttribute('aria-hidden','true');
+  ic.innerHTML = isCorrect ? ICON.ok : ICON.bad;
+  const v = document.createElement('div'); v.className = 'verdict';
+  v.textContent = isCorrect ? 'Correct' : 'Incorrect — correct answer: ' + right.text;
+  head.append(ic, v);
+  const exLabel = document.createElement('div'); exLabel.className = 'ex-label'; exLabel.textContent = 'Scientific explanation';
+  const p = document.createElement('div'); p.className = 'ex-text'; p.textContent = q.explanation;
+  const s = document.createElement('div'); s.className = 'src'; s.textContent = 'Source topic: ' + q.topic;
+  ex.append(head, exLabel, p, s);
+  ex.hidden = false;
+
+  const last = state.i === state.queue.length-1;
+  const act = $('#actionBtn');
+  act.textContent = last ? 'See results' : 'Next question';
+  act.disabled = false;
+  $('#hint').textContent = 'Press Enter to continue';
+  updateStats();
+  act.focus({preventScroll:true});
+}
+
+function nextQuestion(){
+  if(!state.answered) return;
+  if(state.i >= state.queue.length-1){ finish(); return; }
+  state.i++;
+  renderQuestion();
+}
+
+function updateStats(){
+  const total = state.queue.length;
+  const answeredCount = state.correct + state.wrong.length;
+  const pct = answeredCount ? Math.round(state.correct/answeredCount*100) : 0;
+  $('#qCount').textContent = 'Question ' + (state.i+1) + ' of ' + total;
+  $('#sScore').textContent = state.correct;
+  $('#sOk').textContent = state.correct;
+  $('#sBad').textContent = state.wrong.length;
+  $('#sPct').textContent = pct + '%';
+  const prog = Math.round(answeredCount/total*100);
+  $('#pfill').style.width = prog + '%';
+  $('#pbar').setAttribute('aria-valuenow', prog);
+}
+
+/* ==========================================================
+   5. RESULTS
+   ========================================================== */
+function finish(){
+  const total = state.queue.length;
+  const pct = Math.round(state.correct/total*100);
+
+  $('#rMode').textContent = MODE_LABEL[state.mode];
+  $('#rScore').textContent = state.correct + ' / ' + total;
+  $('#rOk').textContent = state.correct;
+  $('#rBad').textContent = state.wrong.length;
+  $('#rTotal').textContent = total;
+  $('#rPct').textContent = pct + '%';
+
+  let msg;
+  if(pct===100)      msg = "Flawless! You have mastered the history, symptoms and molecular mechanisms of Minamata disease.";
+  else if(pct>=85)   msg = "Excellent work — a very solid command of methylmercury pollution and neurotoxicity.";
+  else if(pct>=70)   msg = "Good performance. Review the explanations below to consolidate the remaining points.";
+  else if(pct>=50)   msg = "A fair start. Go through the review below, then try again to improve your score.";
+  else               msg = "Keep going — the review below explains each missed question. A second attempt will help a lot.";
+  $('#rMsg').textContent = msg;
+
+  const rev = $('#review');
+  rev.innerHTML = '';
+  if(state.wrong.length===0){
+    const d = document.createElement('div'); d.className = 'perfect';
+    d.textContent = 'No incorrect answers to review.';
+    rev.appendChild(d);
+  }else{
+    const h = document.createElement('h3'); h.textContent = 'Review of incorrect answers (' + state.wrong.length + ')';
+    rev.appendChild(h);
+    state.wrong.forEach(w=>{
+      const det = document.createElement('details'); det.className = 'rev-item';
+      const sum = document.createElement('summary');
+      const st = document.createElement('span'); st.textContent = w.q; sum.appendChild(st);
+      const body = document.createElement('div'); body.className = 'rev-body';
+      const a = document.createElement('p'); a.className = 'yours'; a.textContent = 'Your answer: ' + w.yours;
+      const b = document.createElement('p'); b.className = 'right'; b.textContent = 'Correct answer: ' + w.right;
+      const c = document.createElement('p'); c.textContent = w.explanation;
+      const d = document.createElement('p'); d.className = 'hint'; d.textContent = 'Source topic: ' + w.topic;
+      body.append(a,b,c,d); det.append(sum,body); rev.appendChild(det);
+    });
+  }
+
+  show('results');
+  // animate score ring (circumference = 2·π·52 ≈ 326.73)
+  const fg = $('#ringFg');
+  fg.style.strokeDashoffset = 326.73;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ fg.style.strokeDashoffset = 326.73*(1-pct/100); }));
+}
+
+function resetToHome(){
+  state.mode = null; state.queue = []; state.i = 0; state.correct = 0;
+  state.wrong = []; state.selected = null; state.answered = false;
+}
+
+/* ==========================================================
+   6. EVENTS
+   ========================================================== */
+$('#startBtn').addEventListener('click', ()=>startMode(chosenMode()));
+$('#actionBtn').addEventListener('click', ()=>{ state.answered ? nextQuestion() : confirmAnswer(); });
+$('#exitBtn').addEventListener('click', ()=>{ resetToHome(); show('home'); });
+$('#restartBtn').addEventListener('click', ()=>startMode(state.mode));
+$('#changeBtn').addEventListener('click', ()=>{
+  // return to the welcome screen with the last mode pre-selected; stale answers are cleared
+  const last = state.mode;
+  resetToHome();
+  for(const r of modeInputs){ if(last) r.checked = (r.value===last); }
+  show('home');
+});
+
+$('#fsBtn').addEventListener('click', ()=>{
+  try{
+    if(document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  }catch(e){ /* full screen not available — ignore */ }
+});
+
+// Keyboard shortcuts (active only on the quiz screen)
+document.addEventListener('keydown', e=>{
+  if(screens.quiz.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+
+  if(k==='Enter'){
+    if(state.answered){ e.preventDefault(); nextQuestion(); return; }
+    const opt = e.target.closest && e.target.closest('.opt');
+    if(opt){
+      e.preventDefault();
+      const idx = Number(opt.dataset.idx);
+      if(state.selected===idx) confirmAnswer(); else selectOption(idx);
+      return;
+    }
+    if(state.selected!==null && e.target!==$('#actionBtn')){ e.preventDefault(); confirmAnswer(); }
+    return;
+  }
+  if(state.answered) return;
+  if(state.mode==='mcq' && /^[1-4]$/.test(k)) selectOption(Number(k)-1);
+  else if(state.mode==='tf'){
+    const u = k.toLowerCase();
+    if(u==='t' || k==='1') selectOption(0);
+    else if(u==='f' || k==='2') selectOption(1);
+  }
+});
+
+/* ==========================================================
+   7. INIT — question counts on the welcome screen
+   ========================================================== */
+$('#cntMcq').textContent = QUESTIONS.mcq.length + ' questions';
+$('#cntTf').textContent  = QUESTIONS.tf.length + ' questions';
+</script>
+</body>
+</html>
